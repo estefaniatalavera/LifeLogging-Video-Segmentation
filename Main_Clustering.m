@@ -26,7 +26,7 @@ for i_fold=1:length(folders)
     fichero=([directorio_im folder]);
     
     files_aux=dir([fichero '/*' formats{i_fold}]);
-    count = 1;
+    count = 1;files=[];
     for n_files = 1:length(files_aux)
         if(files_aux(n_files).name(1) ~= '.')
             files(count) = files_aux(n_files);
@@ -38,7 +38,7 @@ for i_fold=1:length(folders)
     % Read GroundTruth - Excel    
     excel_filename=(['GT_' folder '.xls']);
     [clust_man,clustersIdGT,cl_limGT, ~]=analizarExcel_Narrative(excel_filename,files, formats{i_fold});
-     delim=cl_limGT';
+    delim=cl_limGT';
         if delim(1) == 1, delim=delim(2:end); end
         for i=1:length(clust_man)
              [a,b]=find(clustersIdGT==i);
@@ -66,16 +66,16 @@ for i_fold=1:length(folders)
             cut=cut_indx(idx_cut);
             clust_auto_ini = cluster(Z, 'cutoff', cut, 'criterion', 'distance');
             
-                        index=1;
+                        index=1;bound=[];
                         for pos=1:length(clust_auto_ini)-1
-                            if clust_auto_ini(pos)~=clust_auto_ini(pos+1)
+                            if (clust_auto_ini(pos)~=clust_auto_ini(pos+1))>0
                                 bound(index)=pos;
                                 index=index+1;
                             end
                         end
                         if (exist('bound','var')==0), bound=0; end
-                        automatic_aux=bound;
-                        if automatic_aux(1) == 1, automatic=automatic_aux(2:end);end
+                        automatic=bound;
+                        if automatic(1) == 1, automatic=automatic(2:end);end
             
             % clust_man & clust_auto = array of cells     
             % LH MATRIX: Allow us to apply the same criteria that we have
@@ -99,32 +99,30 @@ for i_fold=1:length(folders)
             clust_man_ImagName=image_assig(clust_manId,files);
             
             % Evaluation  
-            disp(['Evaluando ' num2str(cut) ' del metodo ' method ' de la carpeta ' folder ])
+            disp(['Evaluation: ' num2str(cut) ' cut value, method: ' method ' , folder: ' folder ])
 
             [rec,prec,acc,fMeasure]=Rec_Pre_Acc_Evaluation(delim,automatic,Nframes,tol);
             [JImean,JIvar,U,P,long]=JaccardIndex(clust_man_ImagName,clust_auto_ImagName);  
                             
-                            %Create Results Array
-                            RPAF{idx_cut,1}=clust_auto_ini;
-                            RPAF{idx_cut,2}=fMeasure;
+            %Create Results Array
+            RPAF{idx_cut,1}=clust_auto_ini;
+            RPAF{idx_cut,2}=fMeasure;
+
+            RPAF{idx_cut,3}=rec;
+            RPAF{idx_cut,4}=prec;
+            RPAF{idx_cut,5}=acc;
+
+            RPAF{idx_cut,6}=JImean;
+            RPAF{idx_cut,7}=JIvar;
+            RPAF{idx_cut,8}=long;
+            RPAF{idx_cut,9}=length(clust_auto_ImagName);
                             
-                            RPAF{idx_cut,3}=rec;
-                            RPAF{idx_cut,4}=prec;
-                            RPAF{idx_cut,5}=acc;
-                            
-                            RPAF{idx_cut,6}=JImean;
-                            RPAF{idx_cut,7}=JIvar;
-                            RPAF{idx_cut,8}=long;
-                            RPAF{idx_cut,9}=length(clust_auto_ImagName);
-                            
-            clearvars bound clustersId long automatic_aux automatic
         end%end cut             
              % SAVE Results
-             disp(['Guardamos ' method ' de la carpeta ' folder ])
+             disp(['Save: ' method ' applied to ' folder ' folder'])
              aux_Save=([saveResults 'RPAF_' folder '_' method]);
              save(aux_Save,'RPAF')
     end %end method
-    clearvars similarities files delim 
 end %end folder
 
 
